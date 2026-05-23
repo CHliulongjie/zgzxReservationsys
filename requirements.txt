@@ -1,0 +1,10 @@
+Flask
+openpyxl
+PyYAML
+Werkzeug
+waitress
+requests
+et_xmlfile
+flask-cors
+pandas
+numpy

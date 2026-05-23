@@ -1,0 +1,104 @@
+server:
+  host: 0.0.0.0
+  port: 5000
+  debug: false
+  network_mode: lan
+  allowed_ips: []
+systems:
+  badminton:
+    enabled: true
+    name: 羽毛球场
+    fields: 6
+    weekdays:
+      周一: true
+      周三: true
+      周二: true
+      周五: false
+      周六: false
+      周四: true
+      周日: false
+    start_time: 00:00
+    end_time: '20:00'
+    daily_limit_per_user: 1
+    only_today: false
+  pingpong:
+    enabled: true
+    name: 乒乓球场
+    fields: 8
+    weekdays:
+      周一: true
+      周二: true
+      周三: true
+      周四: true
+      周五: false
+      周六: false
+      周日: false
+    start_time: 00:00
+    end_time: '16:00'
+    daily_limit_per_user: 1
+    only_today: false
+  basketball:
+    enabled: true
+    name: 篮球场
+    fields: 4
+    weekdays:
+      周一: true
+      周二: true
+      周三: true
+      周四: true
+      周五: false
+      周六: false
+      周日: false
+    start_time: 00:00
+    end_time: '16:00'
+    daily_limit_per_user: 1
+    only_today: false
+  football:
+    enabled: true
+    name: 足球场
+    fields: 2
+    weekdays:
+      周一: true
+      周二: true
+      周三: true
+      周四: true
+      周五: false
+      周六: false
+      周日: false
+    start_time: 00:00
+    end_time: '16:00'
+    daily_limit_per_user: 1
+    only_today: false
+  movie:
+    enabled: true
+    name: 尔雅轩电影
+    sessions: []
+  other:
+    enabled: true
+    name: 其他预约
+    items:
+    - id: '1'
+      name: 算法穹顶社团招新报名
+      description: 为算法穹顶社团接纳更多人才，共建更好的中国中学科技氛围
+      capacity: 0
+      start_time: 2026-02-27T00:00
+      end_time: 2026-03-31T23:59
+      current_count: 0
+security:
+  login_server_url: https://longjieruankong.xyz/login1
+  session_timeout_minutes: 30
+  max_login_attempts: 5
+  require_https: false
+  control_panel_password: admin123
+login:
+  xlsx_path: /home/liulongjie/PycharmProjects/PythonProject/users.xlsx
+  server_url: https://longjieruankong.xyz/login1
+data:
+  backup_auto: true
+  backup_interval_hours: 24
+  backup_keep_days: 7
+  cleanup_old_data_days: 30
+ui:
+  theme: default
+  language: zh-CN
+  show_weekend: false
