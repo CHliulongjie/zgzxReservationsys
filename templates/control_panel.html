@@ -195,52 +195,51 @@
                 </div>
             </div>
 
-            <!-- 数据查看卡片 -->
-            <div class="server-config-card">
-                <h4 class="mb-3"><i class="fas fa-table"></i> 预约数据查看与导出</h4>
-                <div class="row align-items-end mb-3">
-                    <div class="col-md-4 mb-2">
-                        <label class="form-label">选择系统</label>
-                        <select class="form-select" id="dataSystemSelect" onchange="loadDataFiles()">
-                            <option value="badminton">羽毛球场</option>
-                            <option value="pingpong">乒乓球场</option>
-                            <option value="basketball">篮球场</option>
-                            <option value="football">足球场</option>
-                            <option value="movie">尔雅轩电影</option>
-                            <option value="other">其他预约</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6 mb-2">
-                        <label class="form-label">选择数据文件</label>
-                        <select class="form-select" id="dataFileSelect" onchange="previewDataFile()">
-                            <option value="">请先选择系统</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 mb-2">
-                        <button class="btn btn-success w-100" id="exportBtn" onclick="exportDataFile()" disabled>
-                            <i class="fas fa-download"></i> 导出表格
-                        </button>
-                    </div>
-                </div>
-                <div id="dataPreviewArea" style="display:none;">
-                    <hr>
-                    <h6><i class="fas fa-eye"></i> 数据预览: <span id="previewFileName"></span></h6>
-                    <div class="table-responsive" style="max-height:500px;overflow:auto;">
-                        <table class="table table-striped table-bordered table-sm" id="dataTable">
-                            <thead id="dataTableHead"></thead>
-                            <tbody id="dataTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div id="noDataArea" style="display:none;" class="text-center text-muted py-4">
-                    <i class="fas fa-inbox" style="font-size:2rem;"></i>
-                    <p class="mt-2">该系统暂无数据文件</p>
-                </div>
-            </div>
-
             <!-- 系统控制卡片 -->
             <div id="systemsContainer">
                 <!-- 系统控制将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 预约数据预览模态框 -->
+    <div class="modal fade" id="reservationPreviewModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-table"></i> 预约数据预览 - <span id="previewModalSystemName"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- 选项栏：文件选择 + 导出按钮 -->
+                    <div class="row align-items-end mb-3">
+                        <div class="col-md-8 mb-2">
+                            <label class="form-label">选择数据文件</label>
+                            <select class="form-select" id="modalFileSelect" onchange="previewModalFile()">
+                                <option value="">请选择...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <button class="btn btn-success w-100" id="modalExportBtn" onclick="exportModalFile()" disabled>
+                                <i class="fas fa-download"></i> 导出该数据
+                            </button>
+                        </div>
+                    </div>
+                    <div id="modalPreviewArea" style="display:none;">
+                        <hr>
+                        <h6><i class="fas fa-eye"></i> 当前预览: <span id="modalPreviewFileName"></span></h6>
+                        <div class="table-responsive" style="max-height:500px;overflow:auto;">
+                            <table class="table table-striped table-bordered table-sm" id="modalDataTable">
+                                <thead id="modalDataTableHead"></thead>
+                                <tbody id="modalDataTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="modalNoDataArea" style="display:none;" class="text-center text-muted py-4">
+                        <i class="fas fa-inbox" style="font-size:2rem;"></i>
+                        <p class="mt-2">该系统暂无数据文件</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -485,7 +484,10 @@
                         </div>
                         <small class="text-muted">开启后，虽然开放周一到周四，但周一只能预约周一的场地，不能预约周二、三、四的场地</small>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3 d-flex gap-2 flex-wrap">
+                        <button class="btn btn-info btn-sm" onclick="showReservationPreview('${system.id}', '${system.name}')">
+                            <i class="fas fa-eye"></i> 查看预约
+                        </button>
                         <button class="btn btn-danger btn-sm" onclick="clearSystemData('${system.id}')">
                             <i class="fas fa-trash"></i> 清除数据
                         </button>
@@ -522,9 +524,12 @@
                 }
 
                 specificControls = `
-                    <div class="mb-3">
+                    <div class="mb-3 d-flex gap-2 flex-wrap">
                         <button class="btn btn-primary btn-sm" onclick="showAddSessionModal('${system.id}')">
                             <i class="fas fa-plus"></i> 添加${system.id === 'movie' ? '场次' : '项目'}
+                        </button>
+                        <button class="btn btn-info btn-sm" onclick="showReservationPreview('${system.id}', '${system.name}')">
+                            <i class="fas fa-eye"></i> 查看预约
                         </button>
                     </div>
                     <div class="mb-3">
@@ -893,15 +898,35 @@
             }
         }
 
-        // ==================== 数据查看与导出功能 ====================
+        // ==================== 预约数据查看与导出功能（模态框） ====================
 
-        // 加载指定系统的数据文件列表
-        async function loadDataFiles() {
-            const system = document.getElementById('dataSystemSelect').value;
-            const fileSelect = document.getElementById('dataFileSelect');
-            const previewArea = document.getElementById('dataPreviewArea');
-            const noDataArea = document.getElementById('noDataArea');
-            const exportBtn = document.getElementById('exportBtn');
+        let currentPreviewSystem = ''; // 当前正在预览的系统ID
+
+        // 显示预约数据预览模态框
+        function showReservationPreview(systemId, systemName) {
+            currentPreviewSystem = systemId;
+            document.getElementById('previewModalSystemName').textContent = systemName;
+
+            // 重置模态框状态
+            document.getElementById('modalFileSelect').innerHTML = '<option value="">加载中...</option>';
+            document.getElementById('modalPreviewArea').style.display = 'none';
+            document.getElementById('modalNoDataArea').style.display = 'none';
+            document.getElementById('modalExportBtn').disabled = true;
+
+            // 显示模态框
+            const modal = new bootstrap.Modal(document.getElementById('reservationPreviewModal'));
+            modal.show();
+
+            // 加载文件列表
+            loadModalDataFiles();
+        }
+
+        // 加载模态框中的数据文件列表
+        async function loadModalDataFiles() {
+            const fileSelect = document.getElementById('modalFileSelect');
+            const previewArea = document.getElementById('modalPreviewArea');
+            const noDataArea = document.getElementById('modalNoDataArea');
+            const exportBtn = document.getElementById('modalExportBtn');
 
             fileSelect.innerHTML = '<option value="">加载中...</option>';
             previewArea.style.display = 'none';
@@ -909,7 +934,7 @@
             exportBtn.disabled = true;
 
             try {
-                const response = await fetch(`/api/data/files/${system}`);
+                const response = await fetch(`/api/data/files/${currentPreviewSystem}`);
                 const data = await response.json();
 
                 if (data.files && data.files.length > 0) {
@@ -919,6 +944,9 @@
                         fileSelect.innerHTML += `<option value="${file.name}">${file.name} (${sizeStr}, ${file.modified})</option>`;
                     });
                     noDataArea.style.display = 'none';
+                    // 自动选择第一个文件进行预览
+                    fileSelect.selectedIndex = 1;
+                    previewModalFile();
                 } else {
                     fileSelect.innerHTML = '<option value="">无数据文件</option>';
                     noDataArea.style.display = 'block';
@@ -929,15 +957,14 @@
             }
         }
 
-        // 预览选中的数据文件
-        async function previewDataFile() {
-            const system = document.getElementById('dataSystemSelect').value;
-            const filename = document.getElementById('dataFileSelect').value;
-            const previewArea = document.getElementById('dataPreviewArea');
-            const exportBtn = document.getElementById('exportBtn');
-            const headEl = document.getElementById('dataTableHead');
-            const bodyEl = document.getElementById('dataTableBody');
-            const fileNameEl = document.getElementById('previewFileName');
+        // 预览模态框中选中的数据文件
+        async function previewModalFile() {
+            const filename = document.getElementById('modalFileSelect').value;
+            const previewArea = document.getElementById('modalPreviewArea');
+            const exportBtn = document.getElementById('modalExportBtn');
+            const headEl = document.getElementById('modalDataTableHead');
+            const bodyEl = document.getElementById('modalDataTableBody');
+            const fileNameEl = document.getElementById('modalPreviewFileName');
 
             if (!filename) {
                 previewArea.style.display = 'none';
@@ -950,7 +977,7 @@
             bodyEl.innerHTML = '';
 
             try {
-                const response = await fetch(`/api/data/preview/${system}/${encodeURIComponent(filename)}`);
+                const response = await fetch(`/api/data/preview/${currentPreviewSystem}/${encodeURIComponent(filename)}`);
                 const data = await response.json();
 
                 if (data.error) {
@@ -990,10 +1017,9 @@
             }
         }
 
-        // 导出当前正在预览的数据文件
-        function exportDataFile() {
-            const system = document.getElementById('dataSystemSelect').value;
-            const filename = document.getElementById('dataFileSelect').value;
+        // 导出模态框中当前正在预览的数据文件
+        function exportModalFile() {
+            const filename = document.getElementById('modalFileSelect').value;
 
             if (!filename) {
                 showAlert('请先选择要导出的文件', 'warning');
@@ -1001,7 +1027,7 @@
             }
 
             // 直接通过浏览器下载
-            window.location.href = `/api/data/export/${system}/${encodeURIComponent(filename)}`;
+            window.location.href = `/api/data/export/${currentPreviewSystem}/${encodeURIComponent(filename)}`;
             showAlert('正在下载文件: ' + filename, 'success');
         }
     </script>
