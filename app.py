@@ -974,32 +974,40 @@ def api_restart_system():
 @app.route('/api/system/shutdown', methods=['POST'])
 @control_panel_login_required
 def api_shutdown_system():
-    """关闭系统 - 通过main.py控制服务器执行"""
+    """关闭系统
+
+    优先通过 main.py 控制服务器(5001端口)关闭整个进程树；
+    若控制服务器不可用（如直接运行 app.py 测试），则 app.py 自身延迟退出，
+    这样通过 main.py 启动时 subprocess.call 会返回，main.py 随之退出。
+    """
     try:
         app.logger.info("系统关闭请求已接收")
-        
-        # 发送关闭请求到main.py的控制服务器
+
+        # 先尝试通过 main.py 控制服务器关闭整个进程树
         try:
             import requests
-            response = requests.post('http://127.0.0.1:5001/api/control/shutdown', timeout=5)
+            response = requests.post('http://127.0.0.1:5001/api/control/shutdown', timeout=2)
             if response.status_code == 200:
                 result = response.json()
                 return jsonify(result)
-            else:
-                # 如果控制服务器不可用，返回错误但不直接执行关闭
-                app.logger.error("控制服务器不可用，无法执行关闭")
-                return jsonify({
-                    'success': False, 
-                    'error': '控制服务器不可用，无法执行关闭，请手动关闭服务器'
-                }), 500
         except Exception as e:
-            # 如果控制服务器不可用，返回错误但不直接执行关闭
-            app.logger.error(f"关闭请求失败: {e}")
-            return jsonify({
-                'success': False, 
-                'error': '关闭服务不可用，请手动关闭服务器'
-            }), 500
-        
+            app.logger.warning(f"控制服务器不可用，改由 app.py 自身关闭: {e}")
+
+        # 后备方案：app.py 自身延迟退出
+        import threading
+        import os
+        import time
+
+        def delayed_self_exit():
+            time.sleep(1)
+            app.logger.info("app.py 自身关闭中...")
+            os._exit(0)
+
+        thread = threading.Thread(target=delayed_self_exit, daemon=True)
+        thread.start()
+
+        return jsonify({'success': True, 'message': '服务器正在关闭'})
+
     except Exception as e:
         app.logger.error(f"关闭系统失败: {e}")
         return jsonify({'error': str(e)}), 500
