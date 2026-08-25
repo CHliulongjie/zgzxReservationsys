@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中学场馆预约系统</title>
+    <link rel="icon" href="/static/images/社团图标.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3498db;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --info: #1abc9c;
+        }
+
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* 修改导航栏样式 */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1050; /* 确保导航栏高于其他内容 */
+        }
+
+        /* 修改导航栏文字颜色为深色 */
+        .navbar-brand,
+        .navbar-nav .nav-link {
+            color: #333 !important;
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: var(--primary) !important;
+        }
+
+        /* 修改下拉菜单样式，确保显示在最上层 */
+        .dropdown-menu {
+            position: absolute;
+            z-index: 1060; /* 下拉菜单要比导航栏更高 */
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
+        /* 其他原有样式保持不变 */
+        .system-tabs {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #dee2e6;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .system-tab {
+            padding: 15px 25px;
+            border: none;
+            background: none;
+            color: #495057;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .system-tab:hover {
+            color: var(--primary);
+            background: rgba(67, 97, 238, 0.05);
+        }
+
+        .system-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: rgba(67, 97, 238, 0.08);
+        }
+
+        .content-area {
+            padding: 30px 0;
+        }
+
+        .system-card {
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border: none;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .system-header {
+            border-radius: 15px 15px 0 0;
+            padding: 25px;
+            color: #333;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        }
+
+        .field-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .field-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .field-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .field-card.available {
+            border-color: var(--success);
+        }
+
+        .field-card.available::before {
+            background: var(--success);
+        }
+
+        .field-card.booked {
+            border-color: var(--danger);
+            opacity: 0.9;
+        }
+
+        .field-card.booked::before {
+            background: var(--danger);
+        }
+
+        .session-card {
+            border-left: 4px solid var(--info);
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .session-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .date-selector {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .alert-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 50px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d5f4e6;
+            color: #27ae60;
+        }
+
+        .badge-danger {
+            background: #fdeaea;
+            color: #e74c3c;
+        }
+
+        .btn-custom {
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <img src="/static/images/社团图标.png" alt="社团图标" style="width:30px;height:30px;border-radius:6px;">
+                <i class="fas fa-calendar-alt"></i> 中学场馆预约系统
+            </a>
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user"></i> <span id="username">用户</span>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="#" onclick="showMyReservations()"><i class="fas fa-list"></i> 我的预约</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出登录</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 系统标签页 -->
+    <div class="system-tabs">
+        <div class="container">
+            <div class="d-flex flex-wrap" id="systemTabs">
+                <!-- 标签页将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="container content-area">
+        <!-- 用户信息 -->
+        <div class="user-info">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0">欢迎，<span id="displayUsername" class="text-primary"></span></h5>
+                    <p class="mb-0 text-muted" id="reservationStatus">今日尚未预约</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div id="currentTime" class="text-primary"></div>
+                    <div id="currentDate" class="text-muted"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统内容 -->
+        <div id="systemContent">
+            <!-- 内容将通过JavaScript动态加载 -->
+        </div>
+    </div>
+
+    <!-- 预约模态框 -->
+    <div class="modal fade" id="bookingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bookingModalTitle">预约确认</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> 请确认预约信息
+                    </div>
+                    <div id="bookingInfo">
+                        <!-- 预约信息将通过JavaScript动态生成 -->
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 每人每天只能预约一个项目
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmBooking()">确认预约</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 我的预约模态框 -->
+    <div class="modal fade" id="myReservationsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">我的预约</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="myReservationsContent">
+                        <!-- 预约列表将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示容器 -->
+    <div class="alert-container" id="alertContainer"></div>
+
+    <!-- 技术支持信息 -->
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12 text-center">
+                <p class="text-muted small">
+                    <a href="https://longjieruankong.xyz/sfqd_club" target="_blank" class="text-decoration-none">
+                        中国中学算法穹顶社提供技术支持
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript文件 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/reservation.js"></script>
+</body>
+</html>

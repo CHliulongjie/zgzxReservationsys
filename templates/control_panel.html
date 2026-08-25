@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>控制面板 - 中学场馆预约系统</title>
+    <link rel="icon" href="/static/images/社团图标.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navbar-dark .navbar-brand,
+        .navbar-dark .text-white {
+            color: #333 !important;
+        }
+
+        .system-control-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .system-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .form-switch {
+            font-size: 1.2rem;
+        }
+
+        .session-item, .item-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .alert-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo i {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .login-title {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: #2b2d42;
+            font-weight: 600;
+        }
+
+        .login-subtitle {
+            color: #6c757d;
+            margin-bottom: 30px;
+        }
+
+        .server-config-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录覆盖层 -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-box">
+            <div class="login-logo">
+                <img src="/static/images/社团图标.png" alt="算法穹顶社" style="width:70px;height:70px;border-radius:12px;margin-bottom:10px;">
+                <h2 class="login-title">管理员登录</h2>
+                <p class="login-subtitle">中国中学场馆预约系统</p>
+            </div>
+            <div class="mb-3">
+                <label for="controlUsername" class="form-label">用户名</label>
+                <input type="text" class="form-control" id="controlUsername" placeholder="请输入用户名" onkeypress="if(event.key==='Enter') loginToControlPanel()">
+            </div>
+            <div class="mb-3">
+                <label for="controlPassword" class="form-label">密码</label>
+                <input type="password" class="form-control" id="controlPassword" placeholder="请输入密码" onkeypress="if(event.key==='Enter') loginToControlPanel()">
+            </div>
+            <button class="btn btn-primary w-100" id="loginBtn" onclick="loginToControlPanel()">
+                <span id="loginBtnText">登录</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 控制面板内容 -->
+    <div id="controlPanelContent" style="display: none;">
+        <!-- 导航栏 -->
+        <nav class="navbar navbar-dark">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1 d-flex align-items-center gap-2">
+                    <img src="/static/images/社团图标.png" alt="社团图标" style="width:32px;height:32px;border-radius:6px;">
+                    <i class="fas fa-sliders-h"></i> 控制面板
+                </span>
+                <div class="d-flex align-items-center">
+                    <span class="text-dark me-3" id="adminUsername">管理员</span>
+                    <button class="btn btn-light" onclick="logout()"><i class="fas fa-sign-out-alt"></i> 退出</button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主内容 -->
+        <div class="container-fluid py-4">
+            <!-- 服务器设置卡片 -->
+            <div class="server-config-card">
+                <h4 class="mb-3"><i class="fas fa-server"></i> 服务器设置</h4>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="serverPort" class="form-label">端口号</label>
+                        <input type="number" class="form-control" id="serverPort" min="1" max="65535" placeholder="5000">
+                        <small class="text-muted">修改后需要重启服务器生效</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="serverHost" class="form-label">监听地址</label>
+                        <input type="text" class="form-control" id="serverHost" placeholder="0.0.0.0">
+                        <small class="text-muted">0.0.0.0表示监听所有网络接口</small>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="saveServerConfig()">
+                    <i class="fas fa-save"></i> 保存服务器配置
+                </button>
+
+                <!-- 添加系统控制按钮 -->
+                <div class="mt-4 pt-3 border-top">
+                    <h5 class="mb-3"><i class="fas fa-cogs"></i> 系统控制</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-warning" onclick="restartSystem()">
+                            <i class="fas fa-redo"></i> 重启系统
+                        </button>
+                        <button class="btn btn-danger" onclick="shutdownSystem()">
+                            <i class="fas fa-power-off"></i> 关闭系统
+                        </button>
+                    </div>
+                    <small class="text-muted d-block mt-2">重启系统将重新启动服务器，关闭系统将停止服务器运行</small>
+                </div>
+            </div>
+
+            <!-- 数据查看卡片 -->
+            <div class="server-config-card">
+                <h4 class="mb-3"><i class="fas fa-table"></i> 预约数据查看与导出</h4>
+                <div class="row align-items-end mb-3">
+                    <div class="col-md-4 mb-2">
+                        <label class="form-label">选择系统</label>
+                        <select class="form-select" id="dataSystemSelect" onchange="loadDataFiles()">
+                            <option value="badminton">羽毛球场</option>
+                            <option value="pingpong">乒乓球场</option>
+                            <option value="basketball">篮球场</option>
+                            <option value="football">足球场</option>
+                            <option value="movie">尔雅轩电影</option>
+                            <option value="other">其他预约</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">选择数据文件</label>
+                        <select class="form-select" id="dataFileSelect" onchange="previewDataFile()">
+                            <option value="">请先选择系统</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 mb-2">
+                        <button class="btn btn-success w-100" id="exportBtn" onclick="exportDataFile()" disabled>
+                            <i class="fas fa-download"></i> 导出表格
+                        </button>
+                    </div>
+                </div>
+                <div id="dataPreviewArea" style="display:none;">
+                    <hr>
+                    <h6><i class="fas fa-eye"></i> 数据预览: <span id="previewFileName"></span></h6>
+                    <div class="table-responsive" style="max-height:500px;overflow:auto;">
+                        <table class="table table-striped table-bordered table-sm" id="dataTable">
+                            <thead id="dataTableHead"></thead>
+                            <tbody id="dataTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="noDataArea" style="display:none;" class="text-center text-muted py-4">
+                    <i class="fas fa-inbox" style="font-size:2rem;"></i>
+                    <p class="mt-2">该系统暂无数据文件</p>
+                </div>
+            </div>
+
+            <!-- 系统控制卡片 -->
+            <div id="systemsContainer">
+                <!-- 系统控制将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加场次模态框 -->
+    <div class="modal fade" id="addSessionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addSessionModalTitle">添加场次</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addSessionForm">
+                        <input type="hidden" id="addSessionSystem" value="">
+                        <div class="mb-3">
+                            <label for="sessionName" class="form-label">名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="sessionName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sessionDescription" class="form-label">介绍</label>
+                            <textarea class="form-control" id="sessionDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sessionCapacity" class="form-label">人数限制</label>
+                            <input type="number" class="form-control" id="sessionCapacity" min="0" value="0">
+                            <small class="text-muted">0表示不限制</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sessionStartTime" class="form-label">开始预约时间 <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="sessionStartTime" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sessionEndTime" class="form-label">结束预约时间 <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="sessionEndTime" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="submitAddSession()">添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示容器 -->
+    <div class="alert-container" id="alertContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let systemsConfig = {};
+
+        // 页面加载完成后检查登录状态
+        document.addEventListener('DOMContentLoaded', function() {
+            checkControlPanelLogin();
+        });
+
+        // 检查控制面板登录状态
+        async function checkControlPanelLogin() {
+            try {
+                // 简化处理，直接显示登录界面
+                document.getElementById('loginOverlay').style.display = 'flex';
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+            }
+        }
+
+        // 登录到控制面板
+        async function loginToControlPanel() {
+            const username = document.getElementById('controlUsername').value.trim();
+            const password = document.getElementById('controlPassword').value;
+
+            if (!username || !password) {
+                showAlert('请输入用户名和密码', 'warning');
+                return;
+            }
+
+            const loginBtn = document.getElementById('loginBtn');
+            const loginBtnText = document.getElementById('loginBtnText');
+            loginBtn.disabled = true;
+            loginBtnText.textContent = '登录中...';
+
+            try {
+                const response = await fetch('/api/login/control', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('loginOverlay').style.display = 'none';
+                    document.getElementById('controlPanelContent').style.display = 'block';
+                    document.getElementById('adminUsername').textContent = data.username || username;
+                    loadControlPanel();
+                    loadServerConfig();
+                } else {
+                    showAlert(data.error || '登录失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('网络错误: ' + error.message, 'danger');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtnText.textContent = '登录';
+            }
+        }
+
+        // 加载控制面板
+        async function loadControlPanel() {
+            try {
+                const response = await fetch('/api/system/config');
+                if (!response.ok) throw new Error('获取配置失败');
+
+                const config = await response.json();
+                systemsConfig = config.systems || {};
+
+                generateSystemControls();
+            } catch (error) {
+                showAlert('加载配置失败: ' + error.message, 'danger');
+            }
+        }
+
+        // 加载服务器配置
+        async function loadServerConfig() {
+            try {
+                const response = await fetch('/api/server/config');
+                if (response.ok) {
+                    const config = await response.json();
+                    document.getElementById('serverPort').value = config.port || 5000;
+                    document.getElementById('serverHost').value = config.host || '0.0.0.0';
+                }
+            } catch (error) {
+                console.error('加载服务器配置失败:', error);
+            }
+        }
+
+        // 保存服务器配置
+        async function saveServerConfig() {
+            const port = document.getElementById('serverPort').value;
+            const host = document.getElementById('serverHost').value;
+
+            if (!port || !host) {
+                showAlert('请填写完整的服务器配置', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/server/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        port: parseInt(port),
+                        host: host
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert(data.message || '配置已保存，请重启服务器使配置生效', 'success');
+                } else {
+                    showAlert(data.error || '保存失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 生成系统控制界面
+        function generateSystemControls() {
+            const container = document.getElementById('systemsContainer');
+            let html = '';
+
+            const systemOrder = [
+                {id: 'badminton', name: '羽毛球场', icon: 'fa-table-tennis', fields: 6},
+                {id: 'pingpong', name: '乒乓球场', icon: 'fa-table-tennis-paddle-ball', fields: 8},
+                {id: 'basketball', name: '篮球场', icon: 'fa-basketball', fields: 4},
+                {id: 'football', name: '足球场', icon: 'fa-futbol', fields: 2},
+                {id: 'movie', name: '尔雅轩电影', icon: 'fa-film', fields: 0},
+                {id: 'other', name: '其他预约', icon: 'fa-calendar-plus', fields: 0}
+            ];
+
+            systemOrder.forEach(system => {
+                const config = systemsConfig[system.id] || {};
+                html += generateSystemControlCard(system, config);
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 生成单个系统控制卡片
+        function generateSystemControlCard(system, config) {
+            const enabled = config.enabled || false;
+            const weekdays = config.weekdays || {};
+            const startTime = config.start_time || '08:00';
+            const endTime = config.end_time || '20:00';
+            const onlyToday = config.only_today || false;
+
+            let weekdaysHtml = '';
+            const weekdayList = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+            weekdayList.forEach(day => {
+                const checked = weekdays[day] ? 'checked' : '';
+                weekdaysHtml += `
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="${system.id}_${day}" ${checked} onchange="updateWeekday('${system.id}', '${day}')">
+                        <label class="form-check-label" for="${system.id}_${day}">${day}</label>
+                    </div>
+                `;
+            });
+
+            let specificControls = '';
+            if (system.fields > 0) {
+                // 球类预约系统
+                specificControls = `
+                    <div class="mb-3">
+                        <label class="form-label">开放时间</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <input type="time" class="form-control" id="${system.id}_start_time" value="${startTime}" onchange="updateTime('${system.id}', 'start_time')">
+                            </div>
+                            <div class="col-md-6">
+                                <input type="time" class="form-control" id="${system.id}_end_time" value="${endTime}" onchange="updateTime('${system.id}', 'end_time')">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">开放星期</label>
+                        <div>${weekdaysHtml}</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="${system.id}_only_today" ${onlyToday ? 'checked' : ''} onchange="updateOnlyToday('${system.id}')">
+<label class="form-check-label" for="${system.id}_only_today">
+                                <strong>仅可预约当日场地</strong>
+                            </label>
+                        </div>
+                        <small class="text-muted">开启后，虽然开放周一到周四，但周一只能预约周一的场地，不能预约周二、三、四的场地</small>
+                    </div>
+                    <div class="mb-3">
+                        <button class="btn btn-danger btn-sm" onclick="clearSystemData('${system.id}')">
+                            <i class="fas fa-trash"></i> 清除数据
+                        </button>
+                    </div>
+                `;
+            } else {
+                // 电影/其他预约系统
+                const items = system.id === 'movie' ? (config.sessions || []) : (config.items || []);
+                let itemsHtml = '';
+
+                if (items.length === 0) {
+                    itemsHtml = '<p class="text-muted">暂无场次</p>';
+                } else {
+                    items.forEach(item => {
+                        itemsHtml += `
+                            <div class="${system.id === 'movie' ? 'session-item' : 'item-item'}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">${item.name || '未命名'}</h6>
+                                        <p class="mb-1 text-muted small">${item.description || '无介绍'}</p>
+                                        <p class="mb-1 small">
+                                            <strong>人数:</strong> ${item.capacity || 0} |
+                                            <strong>开始:</strong> ${item.start_time || '未设置'} |
+                                            <strong>结束:</strong> ${item.end_time || '未设置'}
+                                        </p>
+                                    </div>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteSession('${system.id}', '${item.id}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                specificControls = `
+                    <div class="mb-3">
+                        <button class="btn btn-primary btn-sm" onclick="showAddSessionModal('${system.id}')">
+                            <i class="fas fa-plus"></i> 添加${system.id === 'movie' ? '场次' : '项目'}
+                        </button>
+                    </div>
+                    <div class="mb-3">
+                        <h6>${system.id === 'movie' ? '场次列表' : '项目列表'}</h6>
+                        <div id="${system.id}_items_list">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <button class="btn btn-danger btn-sm" onclick="clearSystemData('${system.id}')">
+                            <i class="fas fa-trash"></i> 清除数据
+                        </button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="system-control-card">
+                    <div class="system-header">
+                        <h4><i class="fas ${system.icon}"></i> ${system.name}</h4>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="${system.id}_enabled" ${enabled ? 'checked' : ''} onchange="toggleSystem('${system.id}')">
+                            <label class="form-check-label" for="${system.id}_enabled">${enabled ? '已开放' : '未开放'}</label>
+                        </div>
+                    </div>
+                    ${specificControls}
+                </div>
+            `;
+        }
+
+        // 切换系统状态
+        async function toggleSystem(systemId) {
+            const checkbox = document.getElementById(`${systemId}_enabled`);
+            const enabled = checkbox.checked;
+
+            try {
+                const response = await fetch(`/api/system/${systemId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ enabled: enabled })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    systemsConfig[systemId].enabled = enabled;
+                    checkbox.nextElementSibling.textContent = enabled ? '已开放' : '未开放';
+                    showAlert(`${systemsConfig[systemId].name || systemId} ${enabled ? '已开放' : '已关闭'}`, 'success');
+                } else {
+                    checkbox.checked = !enabled;
+                    showAlert(data.error || '操作失败', 'danger');
+                }
+            } catch (error) {
+                checkbox.checked = !enabled;
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+}
+
+        // 更新开放时间
+        async function updateTime(systemId, timeType) {
+            const value = document.getElementById(`${systemId}_${timeType}`).value;
+
+            const config = systemsConfig[systemId] || {};
+            config[timeType] = value;
+
+            try {
+                const response = await fetch(`/api/system/${systemId}/config`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    systemsConfig[systemId] = config;
+                    showAlert('时间设置已保存', 'success');
+                } else {
+                    showAlert(data.error || '保存失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 更新开放星期
+        async function updateWeekday(systemId, weekday) {
+            const checkbox = document.getElementById(`${systemId}_${weekday}`);
+            const enabled = checkbox.checked;
+
+            const config = systemsConfig[systemId] || {};
+            if (!config.weekdays) {
+                config.weekdays = {};
+            }
+            config.weekdays[weekday] = enabled;
+
+            try {
+                const response = await fetch(`/api/system/${systemId}/config`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    systemsConfig[systemId] = config;
+                } else {
+                    checkbox.checked = !enabled;
+                    showAlert(data.error || '保存失败', 'danger');
+                }
+            } catch (error) {
+                checkbox.checked = !enabled;
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 更新仅可预约当日场地选项
+        async function updateOnlyToday(systemId) {
+            const checkbox = document.getElementById(`${systemId}_only_today`);
+            const onlyToday = checkbox.checked;
+
+            const config = systemsConfig[systemId] || {};
+            config.only_today = onlyToday;
+
+            try {
+                const response = await fetch(`/api/system/${systemId}/config`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    systemsConfig[systemId] = config;
+                    showAlert(onlyToday ? '已开启仅可预约当日场地' : '已关闭仅可预约当日场地', 'success');
+                } else {
+                    checkbox.checked = !onlyToday;
+                    showAlert(data.error || '保存失败', 'danger');
+                }
+            } catch (error) {
+                checkbox.checked = !onlyToday;
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 显示添加场次模态框
+        function showAddSessionModal(systemId) {
+            document.getElementById('addSessionSystem').value = systemId;
+            document.getElementById('addSessionModalTitle').textContent =
+                systemId === 'movie' ? '添加电影场次' : '添加预约项目';
+            document.getElementById('addSessionForm').reset();
+
+            const modal = new bootstrap.Modal(document.getElementById('addSessionModal'));
+            modal.show();
+        }
+
+        // 提交添加场次
+        async function submitAddSession() {
+            const systemId = document.getElementById('addSessionSystem').value;
+            const name = document.getElementById('sessionName').value;
+            const description = document.getElementById('sessionDescription').value;
+            const capacity = parseInt(document.getElementById('sessionCapacity').value) || 0;
+            const startTime = document.getElementById('sessionStartTime').value;
+            const endTime = document.getElementById('sessionEndTime').value;
+
+            if (!name || !startTime || !endTime) {
+                showAlert('请填写必填项', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/session/${systemId}/add`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        description: description,
+                        capacity: capacity,
+                        start_time: startTime,
+                        end_time: endTime
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('添加成功', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('addSessionModal')).hide();
+                    loadControlPanel();
+                } else {
+                    showAlert(data.error || '添加失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 删除场次
+        async function deleteSession(systemId, sessionId) {
+            if (!confirm('确定要删除这个场次吗？删除后相关预约数据也会被清除。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/session/${systemId}/delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('删除成功', 'success');
+                    loadControlPanel();
+                } else {
+                    showAlert(data.error || '删除失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 清除系统数据
+        async function clearSystemData(systemId) {
+            if (!confirm('确定要清除该系统的所有数据吗？此操作不可恢复！')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/data/clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ system: systemId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('数据清除成功', 'success');
+                } else {
+                    showAlert(data.error || '清除失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出控制面板吗？')) {
+                fetch('/api/logout').then(() => {
+                    window.location.href = '/';
+                });
+            }
+        }
+
+        // 重启系统
+        async function restartSystem() {
+            if (!confirm('确定要重启系统吗？重启过程中服务将暂时不可用。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/system/restart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('系统正在重启，请稍后重新访问...', 'success');
+                    // 延迟跳转到首页
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 3000);
+                } else {
+                    showAlert(data.error || '重启失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 关闭系统
+        async function shutdownSystem() {
+            if (!confirm('确定要关闭系统吗？关闭后服务将停止运行。')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/system/shutdown', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('系统正在关闭...', 'warning');
+                    // 延迟显示关闭信息
+                    setTimeout(() => {
+                        showAlert('系统已关闭，如需重新启动请手动启动服务器', 'info', 0);
+                    }, 2000);
+                } else {
+                    showAlert(data.error || '关闭失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 显示消息提示
+        function showAlert(message, type = 'info', duration = 5000) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+
+            const alertHtml = `
+                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${getAlertIcon(type)} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            alertContainer.innerHTML += alertHtml;
+
+            if (duration > 0) {
+                setTimeout(() => {
+                    const alert = document.getElementById(alertId);
+                    if (alert) {
+                        alert.remove();
+                    }
+                }, duration);
+            }
+        }
+
+        // 获取提示图标
+        function getAlertIcon(type) {
+            switch(type) {
+                case 'success': return 'check-circle';
+                case 'warning': return 'exclamation-triangle';
+                case 'danger': return 'times-circle';
+                default: return 'info-circle';
+            }
+        }
+
+        // ==================== 数据查看与导出功能 ====================
+
+        // 加载指定系统的数据文件列表
+        async function loadDataFiles() {
+            const system = document.getElementById('dataSystemSelect').value;
+            const fileSelect = document.getElementById('dataFileSelect');
+            const previewArea = document.getElementById('dataPreviewArea');
+            const noDataArea = document.getElementById('noDataArea');
+            const exportBtn = document.getElementById('exportBtn');
+
+            fileSelect.innerHTML = '<option value="">加载中...</option>';
+            previewArea.style.display = 'none';
+            noDataArea.style.display = 'none';
+            exportBtn.disabled = true;
+
+            try {
+                const response = await fetch(`/api/data/files/${system}`);
+                const data = await response.json();
+
+                if (data.files && data.files.length > 0) {
+                    fileSelect.innerHTML = '<option value="">请选择数据文件</option>';
+                    data.files.forEach(file => {
+                        const sizeStr = file.size < 1024 ? `${file.size}B` : `${(file.size / 1024).toFixed(1)}KB`;
+                        fileSelect.innerHTML += `<option value="${file.name}">${file.name} (${sizeStr}, ${file.modified})</option>`;
+                    });
+                    noDataArea.style.display = 'none';
+                } else {
+                    fileSelect.innerHTML = '<option value="">无数据文件</option>';
+                    noDataArea.style.display = 'block';
+                }
+            } catch (error) {
+                fileSelect.innerHTML = '<option value="">加载失败</option>';
+                showAlert('加载数据文件失败: ' + error.message, 'danger');
+            }
+        }
+
+        // 预览选中的数据文件
+        async function previewDataFile() {
+            const system = document.getElementById('dataSystemSelect').value;
+            const filename = document.getElementById('dataFileSelect').value;
+            const previewArea = document.getElementById('dataPreviewArea');
+            const exportBtn = document.getElementById('exportBtn');
+            const headEl = document.getElementById('dataTableHead');
+            const bodyEl = document.getElementById('dataTableBody');
+            const fileNameEl = document.getElementById('previewFileName');
+
+            if (!filename) {
+                previewArea.style.display = 'none';
+                exportBtn.disabled = true;
+                return;
+            }
+
+            exportBtn.disabled = true;
+            headEl.innerHTML = '<tr><td>加载中...</td></tr>';
+            bodyEl.innerHTML = '';
+
+            try {
+                const response = await fetch(`/api/data/preview/${system}/${encodeURIComponent(filename)}`);
+                const data = await response.json();
+
+                if (data.error) {
+                    showAlert('预览失败: ' + data.error, 'danger');
+                    previewArea.style.display = 'none';
+                    return;
+                }
+
+                fileNameEl.textContent = filename;
+                previewArea.style.display = 'block';
+                exportBtn.disabled = false;
+
+                // 渲染表格
+                let headHtml = '<tr>';
+                data.columns.forEach(col => {
+                    headHtml += `<th>${col}</th>`;
+                });
+                headHtml += '</tr>';
+                headEl.innerHTML = headHtml;
+
+                let bodyHtml = '';
+                if (data.rows && data.rows.length > 0) {
+                    data.rows.forEach(row => {
+                        bodyHtml += '<tr>';
+                        row.forEach(cell => {
+                            bodyHtml += `<td>${cell !== null ? cell : ''}</td>`;
+                        });
+                        bodyHtml += '</tr>';
+                    });
+                } else {
+                    bodyHtml = `<tr><td colspan="${data.columns.length}" class="text-center text-muted">无数据</td></tr>`;
+                }
+                bodyEl.innerHTML = bodyHtml;
+            } catch (error) {
+                showAlert('预览数据失败: ' + error.message, 'danger');
+                previewArea.style.display = 'none';
+            }
+        }
+
+        // 导出当前正在预览的数据文件
+        function exportDataFile() {
+            const system = document.getElementById('dataSystemSelect').value;
+            const filename = document.getElementById('dataFileSelect').value;
+
+            if (!filename) {
+                showAlert('请先选择要导出的文件', 'warning');
+                return;
+            }
+
+            // 直接通过浏览器下载
+            window.location.href = `/api/data/export/${system}/${encodeURIComponent(filename)}`;
+            showAlert('正在下载文件: ' + filename, 'success');
+        }
+    </script>
+
+    <!-- 技术支持信息 -->
+    <div class="container-fluid py-3">
+        <div class="row">
+            <div class="col-12 text-center">
+                <p class="text-muted small">
+                    <a href="https://longjieruankong.xyz/sfqd_club" target="_blank" class="text-decoration-none">
+                        中国中学算法穹顶社提供技术支持
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

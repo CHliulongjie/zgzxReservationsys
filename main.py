@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 主启动脚本
 """
@@ -44,8 +45,10 @@ def clean_null_bytes(file_path):
         with open(file_path, 'rb') as f:
             content = f.read()
         
+        # 移除 null 字节
         cleaned_content = content.replace(b'\x00', b'')
         
+        # 如果原内容包含 null 字节，写回文件
         if len(cleaned_content) != len(content):
             with open(file_path, 'wb') as f:
                 f.write(cleaned_content)
@@ -59,10 +62,12 @@ def decrypt_core_files():
     """解密核心文件"""
     print("正在解密核心文件...")
     
+    # 解密 app.py
     if os.path.exists('app.py.ljrk'):
         result = remote_encryptor.decrypt_file_remote('app.py.ljrk', 'app.py')
         if result['success']:
             print("✓ app.py 解密成功")
+            # 清理可能的 null 字节
             clean_null_bytes('app.py')
         else:
             print(f"✗ app.py 远程解密失败: {result['error']}")
@@ -70,10 +75,12 @@ def decrypt_core_files():
     else:
         print("⚠ app.py 加密文件不存在，跳过解密")
     
+    # 解密 config_manager.py
     if os.path.exists('config_manager.py.ljrk'):
         result = remote_encryptor.decrypt_file_remote('config_manager.py.ljrk', 'config_manager.py')
         if result['success']:
             print("✓ config_manager.py 解密成功")
+            # 清理可能的 null 字节
             clean_null_bytes('config_manager.py')
         else:
             print(f"✗ config_manager.py 远程解密失败: {result['error']}")
@@ -81,14 +88,16 @@ def decrypt_core_files():
     else:
         print("⚠ config_manager.py 加密文件不存在，跳过解密")
     
+    # 解密 templates 目录下的文件
     if os.path.exists('templates') and os.path.isdir('templates'):
         for filename in os.listdir('templates'):
             if filename.endswith('.html.ljrk'):
                 encrypted_path = os.path.join('templates', filename)
-                decrypted_path = os.path.join('templates', filename[:-5])
+                decrypted_path = os.path.join('templates', filename[:-5])  # 移除 .ljrk 后缀
                 result = remote_encryptor.decrypt_file_remote(encrypted_path, decrypted_path)
                 if result['success']:
                     print(f"✓ {decrypted_path} 解密成功")
+                    # 清理可能的 null 字节
                     clean_null_bytes(decrypted_path)
                 else:
                     print(f"✗ {decrypted_path} 远程解密失败: {result['error']}")
@@ -101,14 +110,17 @@ def cleanup_decrypted_files():
     """清理解密的文件"""
     print("正在清理解密的文件...")
     
+    # 删除解密后的 app.py
     if os.path.exists('app.py'):
         os.remove('app.py')
         print("✓ app.py 已清理")
     
+    # 删除解密后的 config_manager.py
     if os.path.exists('config_manager.py'):
         os.remove('config_manager.py')
         print("✓ config_manager.py 已清理")
     
+    # 删除解密后的 templates 文件
     if os.path.exists('templates') and os.path.isdir('templates'):
         for filename in os.listdir('templates'):
             if filename.endswith('.html') and not filename.endswith('.html.ljrk'):
@@ -123,6 +135,7 @@ def signal_handler(sig, frame):
     cleanup_decrypted_files()
     sys.exit(0)
 
+# 注册信号处理器
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
 
@@ -133,6 +146,7 @@ def setup_directories():
     print("✓ 目录结构已检查")
     return True
 
+# 创建控制服务器
 control_app = Flask(__name__)
 control_app.secret_key = os.urandom(24)
 
@@ -141,6 +155,7 @@ def api_shutdown():
     """关闭服务器"""
     print("收到关闭请求，正在清理文件...")
     cleanup_decrypted_files()
+    # 延迟退出
     def delayed_exit():
         time.sleep(1)
         os._exit(0)
@@ -154,8 +169,10 @@ def api_restart():
     """重启服务器"""
     print("收到重启请求，正在清理文件...")
     cleanup_decrypted_files()
+    # 延迟重启
     def delayed_restart():
         time.sleep(1)
+        # 重新执行当前脚本
         os.execv(sys.executable, [sys.executable] + sys.argv)
     thread = threading.Thread(target=delayed_restart)
     thread.daemon = True
@@ -165,6 +182,7 @@ def api_restart():
 def start_control_server():
     """启动控制服务器"""
     try:
+        # 使用独立线程运行Flask应用
         from werkzeug.serving import make_server
         server = make_server('127.0.0.1', 5001, control_app, threaded=True)
         server.serve_forever()
@@ -177,18 +195,23 @@ def main():
     print("中国中学场馆预约系统——算法穹顶社")
     print("=" * 60)
 
+    # 启动控制服务器作为后台线程
     control_thread = threading.Thread(target=start_control_server, daemon=True)
     control_thread.start()
 
+    # 检查依赖
     if not check_dependencies():
         return 1
 
+    # 解密核心文件
     if not decrypt_core_files():
         print("核心文件解密失败，无法启动")
         return 1
 
+    # 设置目录
     setup_directories()
 
+    # 启动服务器
     try:
         from app import start_server
         return start_server()

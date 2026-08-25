@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中国中学场馆预约系统——算法穹顶社 - 登录</title>
+    <link rel="icon" href="/static/images/社团图标.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #3498db;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --info: #1abc9c;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: move 20s linear infinite;
+        }
+
+        @keyframes move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .login-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 50px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .login-header h1 {
+            color: #2c3e50;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #7f8c8d;
+        }
+
+        .login-tabs .nav-link {
+            border-radius: 10px 10px 0 0;
+            font-weight: 500;
+        }
+
+        .login-card {
+            border: none;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .login-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .btn-login {
+            border-radius: 10px;
+            padding: 12px 30px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+        }
+
+        .alert-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+        }
+
+        .system-info {
+            text-align: center;
+            margin-top: 30px;
+            color: #95a5a6;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="login-container">
+            <div class="login-header">
+                <img src="/static/images/社团图标.png" alt="算法穹顶社" style="width:80px;height:80px;border-radius:15px;margin-bottom:15px;">
+                <h1><i class="fas fa-calendar-alt"></i> 中国中学场馆预约系统——算法穹顶社</h1>
+                <p>请选择登录方式</p>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="card login-card" id="xlsxLoginCard">
+                        <div class="card-body text-center">
+                            <div class="login-icon text-primary">
+                                <i class="fas fa-file-excel"></i>
+                            </div>
+                            <h5 class="card-title">学校本地账号登录</h5>
+                            <p class="card-text text-muted">使用学校提供的账号密码登录</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card login-card" id="serverLoginCard">
+                        <div class="card-body text-center">
+                            <div class="login-icon text-success">
+                                <i class="fas fa-server"></i>
+                            </div>
+                            <h5 class="card-title">龙解软控账号登录</h5>
+                            <p class="card-text text-muted">通过算法穹顶官方服务器认证</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- XLSX登录表单 -->
+            <div id="xlsxLoginForm" style="display: none;">
+                <form id="xlsxLoginFormElement">
+                    <div class="mb-3">
+                        <label for="xlsxUsername" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="xlsxUsername" placeholder="请输入用户名" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="xlsxPassword" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="xlsxPassword" placeholder="请输入密码" required>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-login">
+                            <i class="fas fa-sign-in-alt"></i> 登录
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="hideAllForms()">
+                            <i class="fas fa-arrow-left"></i> 返回
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 服务器登录表单 -->
+            <div id="serverLoginForm" style="display: none;">
+                <form id="serverLoginFormElement">
+                    <div class="mb-3">
+                        <label for="serverUsername" class="form-label">用户名</label>
+                        <input type="text" class="form-control" id="serverUsername" placeholder="请输入用户名" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="serverPassword" class="form-label">密码</label>
+                        <input type="password" class="form-control" id="serverPassword" placeholder="请输入密码" required>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-login">
+                            <i class="fas fa-sign-in-alt"></i> 登录
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="hideAllForms()">
+                            <i class="fas fa-arrow-left"></i> 返回
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="text-center mt-4 mb-3">
+                <button class="btn btn-outline-dark btn-lg" onclick="goToAdminLogin()" style="border-radius: 10px; padding: 12px 30px; border: 2px solid rgba(0, 0, 0, 0.8); color: #333; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);">
+                    <i class="fas fa-user-shield"></i> 管理员登录
+                </button>
+            </div>
+
+            <div class="system-info">
+                <p>中学场馆预约系统——算法穹顶社</p>
+                <p id="serverStatus">正在连接服务器...</p>
+            </div>
+
+            <!-- 技术支持信息 -->
+            <div class="tech-support text-center mt-4">
+                <p class="text-muted small">
+                    <a href="https://longjieruankong.xyz/sfqd_club" target="_blank" class="text-decoration-none">
+                        中国中学算法穹顶社提供技术支持
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示容器 -->
+    <div class="alert-container" id="alertContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 绑定登录卡片点击事件
+            document.getElementById('xlsxLoginCard').addEventListener('click', function() {
+                showLoginForm('xlsx');
+            });
+
+            document.getElementById('serverLoginCard').addEventListener('click', function() {
+                showLoginForm('server');
+            });
+
+            // 绑定表单提交事件
+            document.getElementById('xlsxLoginFormElement').addEventListener('submit', function(e) {
+                e.preventDefault();
+                loginWithXLSX();
+            });
+
+            document.getElementById('serverLoginFormElement').addEventListener('submit', function(e) {
+                e.preventDefault();
+                loginWithServer();
+            });
+
+            // 检查服务器状态
+            checkServerStatus();
+        });
+
+        // 显示登录表单
+        function showLoginForm(type) {
+            hideAllForms();
+
+            if (type === 'xlsx') {
+                document.getElementById('xlsxLoginForm').style.display = 'block';
+            } else if (type === 'server') {
+                document.getElementById('serverLoginForm').style.display = 'block';
+            }
+        }
+
+        // 隐藏所有表单
+        function hideAllForms() {
+            document.getElementById('xlsxLoginForm').style.display = 'none';
+            document.getElementById('serverLoginForm').style.display = 'none';
+        }
+
+        // 通过XLSX登录
+        async function loginWithXLSX() {
+            const username = document.getElementById('xlsxUsername').value.trim();
+            const password = document.getElementById('xlsxPassword').value.trim();
+
+            if (!username || !password) {
+                showAlert('请输入用户名和密码', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/login/xlsx', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('登录成功', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/reservation';
+                    }, 1000);
+                } else {
+                    showAlert(data.error || '登录失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 通过服务器登录
+        async function loginWithServer() {
+            const username = document.getElementById('serverUsername').value.trim();
+            const password = document.getElementById('serverPassword').value.trim();
+
+            if (!username || !password) {
+                showAlert('请输入用户名和密码', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/login/server', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('登录成功', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/reservation';
+                    }, 1000);
+                } else {
+                    showAlert(data.error || '登录失败', 'danger');
+                }
+            } catch (error) {
+                showAlert('网络错误: ' + error.message, 'danger');
+            }
+        }
+
+        // 检查服务器状态
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('/api/system/info');
+                if (response.ok) {
+                    document.getElementById('serverStatus').innerHTML = '<i class="fas fa-check-circle text-success"></i> 服务器连接正常';
+                } else {
+                    document.getElementById('serverStatus').innerHTML = '<i class="fas fa-times-circle text-danger"></i> 服务器连接失败';
+                }
+            } catch {
+                document.getElementById('serverStatus').innerHTML = '<i class="fas fa-times-circle text-danger"></i> 无法连接服务器';
+            }
+        }
+
+        // 显示消息提示
+        function showAlert(message, type = 'info', duration = 5000) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alertId = 'alert-' + Date.now();
+
+            const alertHtml = `
+                <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${getAlertIcon(type)} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            alertContainer.innerHTML += alertHtml;
+
+            if (duration > 0) {
+                setTimeout(() => {
+                    const alert = document.getElementById(alertId);
+                    if (alert) {
+                        alert.remove();
+                    }
+                }, duration);
+            }
+        }
+
+        // 获取提示图标
+        function getAlertIcon(type) {
+            switch(type) {
+                case 'success': return 'check-circle';
+                case 'warning': return 'exclamation-triangle';
+                case 'danger': return 'times-circle';
+                default: return 'info-circle';
+            }
+        }
+
+        // 跳转到管理员登录页面
+        function goToAdminLogin() {
+            window.location.href = '/control';
+        }
+    </script>
+</body>
+</html>
