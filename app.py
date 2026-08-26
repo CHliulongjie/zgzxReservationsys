@@ -1006,32 +1006,43 @@ def api_add_session(system_name):
 @app.route('/api/system/restart', methods=['POST'])
 @control_panel_login_required
 def api_restart_system():
-    """重启系统 - 通过main.py控制服务器执行"""
+    """重启系统
+
+    通过 main.py 控制服务器(5001端口)终止 app.py 子进程，
+    main.py 主循环检测到重启标志后重新启动 app.py。
+    若控制服务器不可用（如直接运行 app.py 测试），则 app.py 自身退出
+    （通过 main.py 启动时 Popen.wait 返回，若设置了重启标志会重新启动）。
+    """
     try:
         app.logger.info("系统重启请求已接收")
-        
-        # 发送重启请求到main.py的控制服务器
+
+        # 先尝试通过 main.py 控制服务器重启
         try:
             import requests
-            response = requests.post('http://127.0.0.1:5001/api/control/restart', timeout=5)
+            response = requests.post('http://127.0.0.1:5001/api/control/restart', timeout=2)
             if response.status_code == 200:
                 result = response.json()
                 return jsonify(result)
-            else:
-                # 如果控制服务器不可用，返回错误但不直接执行重启
-                app.logger.error("控制服务器不可用，无法执行重启")
-                return jsonify({
-                    'success': False, 
-                    'error': '控制服务器不可用，无法执行重启，请手动重启服务器'
-                }), 500
         except Exception as e:
-            # 如果控制服务器不可用，返回错误但不直接执行重启
-            app.logger.error(f"重启请求失败: {e}")
-            return jsonify({
-                'success': False, 
-                'error': '重启服务不可用，请手动重启服务器'
-            }), 500
-        
+            app.logger.warning(f"控制服务器不可用，改由 app.py 自身退出触发重启: {e}")
+
+        # 后备方案：app.py 自身延迟退出
+        # 通过 main.py 启动时，Popen.wait() 返回，主循环检测退出码决定是否重启
+        # 这里用退出码 0 退出，main.py 会根据 _restart_flag 决定（直接运行 app.py 时不会重启）
+        import threading
+        import os
+        import time
+
+        def delayed_self_exit():
+            time.sleep(1)
+            app.logger.info("app.py 自身关闭中（等待 main.py 重启）...")
+            os._exit(0)
+
+        thread = threading.Thread(target=delayed_self_exit, daemon=True)
+        thread.start()
+
+        return jsonify({'success': True, 'message': '服务器正在重启'})
+
     except Exception as e:
         app.logger.error(f"重启系统失败: {e}")
         return jsonify({'error': str(e)}), 500
