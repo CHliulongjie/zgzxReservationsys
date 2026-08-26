@@ -340,7 +340,7 @@ def api_login_xlsx():
                 df = pd.read_excel(xlsx_path)
                 # 第一列是用户名，第二列是密码
                 for _, row in df.iterrows():
-                    if str(row[0]).strip() == username and str(row[1]).strip() == password:
+                    if str(row.iloc[0]).strip() == username and str(row.iloc[1]).strip() == password:
                         session['user'] = username
                         session['login_time'] = datetime.now().isoformat()
                         app.logger.info(f"用户登录成功: {username}")

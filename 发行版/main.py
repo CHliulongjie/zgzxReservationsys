@@ -441,6 +441,11 @@ def start_control_server():
                 print("[控制服务器] 收到关闭请求...")
                 def delayed_exit():
                     time.sleep(1)
+                    # 关闭前清理解密文件（os._exit 不触发 atexit，必须手动清理）
+                    try:
+                        cleanup_decrypted_files()
+                    except Exception as e:
+                        print(f"[控制服务器] 清理解密文件失败: {e}")
                     os._exit(0)
                 threading.Thread(target=delayed_exit, daemon=True).start()
                 self._send_json(200, {'success': True, 'message': '服务器正在关闭'})
