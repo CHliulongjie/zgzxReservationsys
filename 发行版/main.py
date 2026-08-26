@@ -193,6 +193,19 @@ class FileDecryptor:
             if not success:
                 raise ValueError("文件内容转换失败")
 
+            # 清理解密产生的 null 字节
+            # 加密时末尾分组补 0 对齐，解密后会还原为多余的 \x00，
+            # 对文本文件(.py/.html/.js)必须清除，否则 Python 解析报 SyntaxError
+            try:
+                with open(output_path, 'rb') as f:
+                    raw = f.read()
+                if b'\x00' in raw:
+                    cleaned = raw.replace(b'\x00', b'')
+                    with open(output_path, 'wb') as f:
+                        f.write(cleaned)
+            except Exception:
+                pass
+
             return {'success': True, 'file_ext': file_ext}
 
         except Exception as e:
