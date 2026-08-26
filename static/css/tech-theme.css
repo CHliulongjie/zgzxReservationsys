@@ -853,3 +853,130 @@ body.t-tech-bg::after {
 .t-page-enter {
     animation: t-fade-up 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+
+/* ============================================================
+   白色背景覆盖 - 修复内联样式中的白色背景
+   用 body.t-tech-bg 前缀提高优先级，覆盖各页面 <style> 中的白色背景
+   ============================================================ */
+
+/* index.html */
+body.t-tech-bg .login-container {
+    background: var(--t-glass-bg) !important;
+    border: 1px solid var(--t-glass-border) !important;
+    box-shadow: var(--t-glass-shadow) !important;
+}
+
+body.t-tech-bg .login-header h1 {
+    color: var(--t-text-bright) !important;
+}
+
+body.t-tech-bg .login-header p {
+    color: var(--t-text-dim) !important;
+}
+
+body.t-tech-bg .login-card {
+    background: rgba(15, 22, 64, 0.5) !important;
+    border: 1px solid var(--t-glass-border) !important;
+    color: var(--t-text) !important;
+}
+
+body.t-tech-bg .login-card .card-title {
+    color: var(--t-text-bright) !important;
+}
+
+body.t-tech-bg .login-card .card-text {
+    color: var(--t-text-dim) !important;
+}
+
+body.t-tech-bg .login-icon {
+    text-shadow: 0 0 20px currentColor;
+}
+
+body.t-tech-bg .system-info {
+    color: var(--t-text-dim) !important;
+}
+
+/* reservation.html */
+body.t-tech-bg .navbar {
+    background: var(--t-glass-bg) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+body.t-tech-bg .system-tabs {
+    background: var(--t-glass-bg) !important;
+    border: 1px solid var(--t-glass-border) !important;
+    border-radius: 12px;
+}
+
+body.t-tech-bg .field-card {
+    background: rgba(15, 22, 64, 0.5) !important;
+    border: 1px solid var(--t-glass-border) !important;
+    color: var(--t-text) !important;
+}
+
+body.t-tech-bg .field-card.booked {
+    background: rgba(0, 212, 255, 0.1) !important;
+    border-color: var(--t-primary) !important;
+}
+
+body.t-tech-bg .session-card {
+    background: rgba(15, 22, 64, 0.5) !important;
+    border: 1px solid var(--t-glass-border) !important;
+    color: var(--t-text) !important;
+}
+
+body.t-tech-bg .user-info {
+    background: var(--t-glass-bg) !important;
+    border: 1px solid var(--t-glass-border) !important;
+    color: var(--t-text) !important;
+}
+
+body.t-tech-bg .date-selector {
+    background: var(--t-glass-bg) !important;
+    border: 1px solid var(--t-glass-border) !important;
+    color: var(--t-text) !important;
+}
+
+/* control_panel.html */
+body.t-tech-bg .login-box {
+    background: var(--t-glass-bg) !important;
+    border: 1px solid var(--t-glass-border) !important;
+    color: var(--t-text) !important;
+}
+
+body.t-tech-bg .system-control-card {
+    background: rgba(15, 22, 64, 0.5) !important;
+    border: 1px solid var(--t-glass-border) !important;
+    color: var(--t-text) !important;
+}
+
+body.t-tech-bg .server-config-card {
+    background: rgba(15, 22, 64, 0.5) !important;
+    border: 1px solid var(--t-glass-border) !important;
+    color: var(--t-text) !important;
+}
+
+/* 通用：覆盖所有内联白色背景的兜底规则 */
+body.t-tech-bg [class*="card"]:not(.t-glass) {
+    background: rgba(15, 22, 64, 0.5);
+    border: 1px solid var(--t-glass-border);
+    color: var(--t-text);
+}
+
+/* 确保所有标题文字在深色背景上可读 */
+body.t-tech-bg h1, body.t-tech-bg h2, body.t-tech-bg h3,
+body.t-tech-bg h4, body.t-tech-bg h5, body.t-tech-bg h6,
+body.t-tech-bg .card-title, body.t-tech-bg .modal-title {
+    color: var(--t-text-bright) !important;
+}
+
+body.t-tech-bg p, body.t-tech-bg span, body.t-tech-bg label,
+body.t-tech-bg .card-text, body.t-tech-bg .form-text {
+    color: var(--t-text);
+}
+
+body.t-tech-bg .text-muted,
+body.t-tech-bg .text-secondary {
+    color: var(--t-text-dim) !important;
+}
