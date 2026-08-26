@@ -635,7 +635,9 @@ async function showMyReservations() {
                 content.innerHTML = html;
             }
 
-            const modal = new bootstrap.Modal(document.getElementById('myReservationsModal'));
+            // 复用已有实例，避免重复创建导致 backdrop 残留
+            const modalEl = document.getElementById('myReservationsModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
             modal.show();
         }
     } catch (error) {
