@@ -441,6 +441,18 @@ def start_control_server():
                 print("[控制服务器] 收到关闭请求...")
                 def delayed_exit():
                     time.sleep(1)
+                    # 终止 app.py 子进程，避免成为孤儿进程
+                    # （否则第一次关闭只终止 main.py，app.py 仍在 5000 端口运行，
+                    #   需点第二次走后备自身退出才真正关闭）
+                    try:
+                        if _app_process is not None and _app_process.poll() is None:
+                            _app_process.terminate()
+                            try:
+                                _app_process.wait(timeout=3)
+                            except Exception:
+                                _app_process.kill()
+                    except Exception as e:
+                        print(f"[控制服务器] 终止 app.py 失败: {e}")
                     # 关闭前清理解密文件（os._exit 不触发 atexit，必须手动清理）
                     try:
                         cleanup_decrypted_files()
