@@ -151,8 +151,12 @@ def check_system_available(system, date=None):
         if current_weekday not in weekdays:
             return False
 
-    # 检查时间
-    current_time = date.time()
+    # 检查时间：用当前时间判断是否在场馆开放时间内
+    # 注意：date 是用户选择的预约日期（由 %Y-%m-%d 解析，time() 为 00:00），
+    #   若用 date.time() 比较，start_time 非 00:00 时会永远判定不在时间内，
+    #   且 end_time 判断会失效（00:00 恒 <= end_time）导致超时仍可预约。
+    #   故开放时间判断用 now.time()，date 仅用于上方星期判断。
+    current_time = datetime.now().time()
     start_time = datetime.strptime(config.get('start_time', '00:00'), '%H:%M').time()
     end_time = datetime.strptime(config.get('end_time', '23:59'), '%H:%M').time()
 
