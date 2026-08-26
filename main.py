@@ -5,6 +5,7 @@
 功能：
 1. 通过项目目录下的虚拟环境(.venv)直接运行 app.py，方便功能测试
 2. 提供控制服务器(端口5001)，支持从管理界面远程关闭/重启整个服务器进程
+3. 检测虚拟环境是否存在，若不存在则询问是否自动创建
 
 控制服务器使用 Python 标准库 http.server 实现，不依赖 Flask，
 这样即使用系统 Python 运行 main.py 也能正常工作。
@@ -97,40 +98,206 @@ def start_control_server():
 
 
 def get_venv_python():
-    """获取虚拟环境中的 Python 可执行文件路径"""
+    """获取虚拟环境中的 Python 可执行文件路径
+
+    如果虚拟环境不存在，返回 None。
+    """
     if os.name == 'nt':
         python_exe = os.path.join('.venv', 'Scripts', 'python.exe')
     else:
         python_exe = os.path.join('.venv', 'bin', 'python')
 
-    if not os.path.exists(python_exe):
-        print(f"✗ 未找到虚拟环境 Python：{python_exe}")
-        print("  请先创建虚拟环境：python -m venv .venv")
-        print("  并安装依赖：.venv\\Scripts\\python.exe -m pip install -r requirements.txt")
-        return None
+    if os.path.exists(python_exe):
+        return python_exe
+    return None
+
+
+def create_virtualenv():
+    """自动创建虚拟环境并安装依赖
+
+    流程：
+    1. python -m venv .venv 创建虚拟环境
+    2. .venv\\Scripts\\python.exe -m pip install --upgrade pip 升级 pip
+    3. .venv\\Scripts\\python.exe -m pip install -r requirements.txt 安装依赖
+
+    显示实时进度，出错后按空格键关闭。
+    """
+    print()
+    print("=" * 60)
+    print("检测到未找到虚拟环境 .venv")
+    print("是否自动创建虚拟环境并安装依赖？")
+    print("  y - 自动创建虚拟环境并安装依赖")
+    print("  n - 取消并退出")
+    print("=" * 60)
+
+    try:
+        choice = input("请输入选择 (y/n): ").strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        print("\n已取消")
+        return False
+
+    if choice != 'y':
+        print("已取消创建虚拟环境")
+        return False
+
+    print()
+    print("=" * 60)
+    print("开始创建虚拟环境...")
+    print("=" * 60)
+
+    # 步骤 1：创建虚拟环境
+    print("\n[步骤 1/3] 正在创建虚拟环境 (.venv)...")
+    print(f"  命令: {sys.executable} -m venv .venv")
+
+    try:
+        process = subprocess.Popen(
+            [sys.executable, '-m', 'venv', '.venv'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding='utf-8',
+            errors='replace'
+        )
+
+        # 实时显示输出
+        for line in process.stdout:
+            print(f"  {line.rstrip()}")
+
+        process.wait()
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, 'venv')
+    except subprocess.CalledProcessError as e:
+        print(f"\n✗ 创建虚拟环境失败 (退出码: {e.returncode})")
+        _pause_on_error()
+        return False
+    except Exception as e:
+        print(f"\n✗ 创建虚拟环境失败: {e}")
+        _pause_on_error()
+        return False
+
+    print("✓ 虚拟环境创建成功")
+
+    # 获取虚拟环境中的 Python 路径
+    python_exe = get_venv_python()
+    if not python_exe:
+        print("\n✗ 虚拟环境创建后仍未找到 Python 可执行文件")
+        _pause_on_error()
+        return False
+
+    # 步骤 2：升级 pip
+    print("\n[步骤 2/3] 正在升级 pip...")
+    print(f"  命令: {python_exe} -m pip install --upgrade pip")
+
+    try:
+        process = subprocess.Popen(
+            [python_exe, '-m', 'pip', 'install', '--upgrade', 'pip'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding='utf-8',
+            errors='replace'
+        )
+
+        for line in process.stdout:
+            print(f"  {line.rstrip()}")
+
+        process.wait()
+        if process.returncode != 0:
+            print(f"  ! pip 升级失败 (退出码: {process.returncode})，继续安装依赖...")
+    except Exception as e:
+        print(f"  ! pip 升级失败: {e}，继续安装依赖...")
+
+    print("✓ pip 已就绪")
+
+    # 步骤 3：安装依赖
+    print("\n[步骤 3/3] 正在安装依赖 (requirements.txt)...")
+    requirements_path = os.path.join(os.getcwd(), 'requirements.txt')
+    if not os.path.exists(requirements_path):
+        print(f"  ! 未找到 requirements.txt ({requirements_path})")
+        print("  跳过依赖安装，请在虚拟环境创建后手动安装依赖")
+        print("  命令: .venv\\Scripts\\python.exe -m pip install -r requirements.txt")
+    else:
+        print(f"  命令: {python_exe} -m pip install -r requirements.txt")
+        print("  正在安装（这可能需要几分钟，请耐心等待）...")
+        print()
+
+        try:
+            process = subprocess.Popen(
+                [python_exe, '-m', 'pip', 'install', '-r', 'requirements.txt'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding='utf-8',
+                errors='replace'
+            )
+
+            for line in process.stdout:
+                print(f"  {line.rstrip()}")
+
+            process.wait()
+            if process.returncode != 0:
+                raise subprocess.CalledProcessError(process.returncode, 'pip install')
+        except subprocess.CalledProcessError as e:
+            print(f"\n✗ 依赖安装失败 (退出码: {e.returncode})")
+            print("  请检查网络连接或 requirements.txt 内容")
+            _pause_on_error()
+            return False
+        except Exception as e:
+            print(f"\n✗ 依赖安装失败: {e}")
+            _pause_on_error()
+            return False
+
+        print("✓ 依赖安装完成")
+
+    print()
+    print("=" * 60)
+    print("✓ 虚拟环境配置完成！")
+    print(f"  Python: {python_exe}")
+    print("=" * 60)
+    print()
+
     return python_exe
 
 
+def _pause_on_error():
+    """出错后提示按空格键关闭，防止窗口直接关闭看不到错误"""
+    print()
+    print("=" * 60)
+    print("配置过程中出现错误，请查看上方日志")
+    print("按回车键退出...")
+    print("=" * 60)
+    try:
+        input()
+    except (EOFError, KeyboardInterrupt):
+        pass
+
+
 def main():
-    """主函数：启动控制服务器 + 通过虚拟环境运行 app.py（支持重启循环）"""
+    """主函数：启动控制服务器 + 通过虚拟环境运行 app.py（支持重启循环）
+
+    如果虚拟环境不存在，询问是否自动创建。
+    """
     global _app_process, _restart_flag
 
     # 切换到脚本所在目录，确保相对路径可用
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
-    # 启动控制服务器作为后台线程
-    control_thread = threading.Thread(target=start_control_server, daemon=True)
-    control_thread.start()
-
+    # 检查虚拟环境是否存在，不存在则询问是否创建
     python_exe = get_venv_python()
     if not python_exe:
-        return 1
+        python_exe = create_virtualenv()
+        if not python_exe:
+            return 1
 
     app_py = os.path.join(script_dir, 'app.py')
     if not os.path.exists(app_py):
         print(f"✗ 未找到 app.py：{app_py}")
         return 1
+
+    # 启动控制服务器作为后台线程
+    control_thread = threading.Thread(target=start_control_server, daemon=True)
+    control_thread.start()
 
     print("=" * 60)
     print("中国中学场馆预约系统——算法穹顶社")
