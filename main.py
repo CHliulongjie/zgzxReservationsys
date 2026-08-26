@@ -112,6 +112,106 @@ def get_venv_python():
     return None
 
 
+def get_requirements_list():
+    """读取 requirements.txt，返回依赖包名列表（去掉版本号）"""
+    req_path = os.path.join(os.getcwd(), 'requirements.txt')
+    if not os.path.exists(req_path):
+        return []
+
+    packages = []
+    with open(req_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            # 去掉版本号：取 == >= <= > < != 前面的包名
+            for sep in ['==', '>=', '<=', '>', '<', '!=', '~=', '===']:
+                if sep in line:
+                    line = line.split(sep)[0].strip()
+                    break
+            if line:
+                packages.append(line)
+    return packages
+
+
+def get_installed_packages(python_exe):
+    """获取虚拟环境中已安装的包名集合（小写）"""
+    try:
+        result = subprocess.run(
+            [python_exe, '-m', 'pip', 'list', '--format=freeze'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding='utf-8',
+            errors='replace',
+            timeout=30
+        )
+        if result.returncode != 0:
+            return set()
+
+        installed = set()
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if '==' in line:
+                pkg_name = line.split('==')[0].lower().replace('-', '_')
+                installed.add(pkg_name)
+        return installed
+    except Exception:
+        return set()
+
+
+def check_dependencies(python_exe):
+    """检测虚拟环境中是否已安装 requirements.txt 中的所有依赖
+
+    返回缺失的包名列表，全部已安装则返回空列表。
+    """
+    required = get_requirements_list()
+    if not required:
+        return []
+
+    installed = get_installed_packages(python_exe)
+
+    missing = []
+    for pkg in required:
+        # 标准化包名：小写，- 替换为 _
+        pkg_norm = pkg.lower().replace('-', '_')
+        if pkg_norm not in installed:
+            missing.append(pkg)
+
+    return missing
+
+
+def install_package(python_exe, package_name, prefer_binary=True):
+    """安装单个包，遇到错误返回 False
+
+    prefer_binary=True 时使用 --prefer-binary 选项，
+    优先使用预编译 wheel，避免从源码编译失败（如 pandas/numpy）。
+    """
+    cmd = [python_exe, '-m', 'pip', 'install']
+    if prefer_binary:
+        cmd.append('--prefer-binary')
+    cmd.append(package_name)
+
+    try:
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding='utf-8',
+            errors='replace'
+        )
+
+        for line in process.stdout:
+            print(f"    {line.rstrip()}")
+
+        process.wait()
+        return process.returncode == 0
+    except Exception as e:
+        print(f"    安装异常: {e}")
+        return False
+
+
 def create_virtualenv():
     """自动创建虚拟环境并安装依赖
 
@@ -209,7 +309,7 @@ def create_virtualenv():
 
     print("✓ pip 已就绪")
 
-    # 步骤 3：安装依赖
+    # 步骤 3：安装依赖（逐个安装，遇到错误跳过继续）
     print("\n[步骤 3/3] 正在安装依赖 (requirements.txt)...")
     requirements_path = os.path.join(os.getcwd(), 'requirements.txt')
     if not os.path.exists(requirements_path):
@@ -217,37 +317,32 @@ def create_virtualenv():
         print("  跳过依赖安装，请在虚拟环境创建后手动安装依赖")
         print("  命令: .venv\\Scripts\\python.exe -m pip install -r requirements.txt")
     else:
-        print(f"  命令: {python_exe} -m pip install -r requirements.txt")
-        print("  正在安装（这可能需要几分钟，请耐心等待）...")
+        packages = get_requirements_list()
+        total = len(packages)
+        success = 0
+        failed = []
+
+        print(f"  共 {total} 个依赖包，逐个安装（遇到错误将跳过继续）")
+        print(f"  使用 --prefer-binary 优先预编译 wheel，避免编译失败")
         print()
 
-        try:
-            process = subprocess.Popen(
-                [python_exe, '-m', 'pip', 'install', '-r', 'requirements.txt'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                encoding='utf-8',
-                errors='replace'
-            )
+        for i, pkg in enumerate(packages, 1):
+            print(f"  [{i}/{total}] 正在安装 {pkg}...")
+            ok = install_package(python_exe, pkg, prefer_binary=True)
+            if ok:
+                success += 1
+                print(f"  [{i}/{total}] ✓ {pkg} 安装成功")
+            else:
+                failed.append(pkg)
+                print(f"  [{i}/{total}] ✗ {pkg} 安装失败，跳过继续")
+            print()
 
-            for line in process.stdout:
-                print(f"  {line.rstrip()}")
-
-            process.wait()
-            if process.returncode != 0:
-                raise subprocess.CalledProcessError(process.returncode, 'pip install')
-        except subprocess.CalledProcessError as e:
-            print(f"\n✗ 依赖安装失败 (退出码: {e.returncode})")
-            print("  请检查网络连接或 requirements.txt 内容")
-            _pause_on_error()
-            return False
-        except Exception as e:
-            print(f"\n✗ 依赖安装失败: {e}")
-            _pause_on_error()
-            return False
-
-        print("✓ 依赖安装完成")
+        print(f"  安装完成：成功 {success}/{total}")
+        if failed:
+            print(f"  以下包安装失败，可能需要手动安装：")
+            for pkg in failed:
+                print(f"    - {pkg}")
+            print(f"  手动安装命令: {python_exe} -m pip install " + " ".join(failed))
 
     print()
     print("=" * 60)
@@ -257,6 +352,49 @@ def create_virtualenv():
     print()
 
     return python_exe
+
+
+def check_and_install_dependencies(python_exe):
+    """检测虚拟环境中是否已安装所有依赖，缺失的自动安装
+
+    返回 True 表示全部就绪（或已尝试安装），False 表示有缺失且安装失败。
+    """
+    missing = check_dependencies(python_exe)
+
+    if not missing:
+        print("[依赖检查] 所有依赖已安装")
+        return True
+
+    print(f"[依赖检查] 检测到 {len(missing)} 个缺失的依赖包：")
+    for pkg in missing:
+        print(f"    - {pkg}")
+    print()
+    print("[依赖检查] 开始安装缺失的依赖（逐个安装，遇到错误跳过继续）...")
+    print()
+
+    total = len(missing)
+    success = 0
+    failed = []
+
+    for i, pkg in enumerate(missing, 1):
+        print(f"  [{i}/{total}] 正在安装 {pkg}...")
+        ok = install_package(python_exe, pkg, prefer_binary=True)
+        if ok:
+            success += 1
+            print(f"  [{i}/{total}] ✓ {pkg} 安装成功")
+        else:
+            failed.append(pkg)
+            print(f"  [{i}/{total}] ✗ {pkg} 安装失败，跳过继续")
+        print()
+
+    print(f"[依赖检查] 安装完成：成功 {success}/{total}")
+    if failed:
+        print(f"[依赖检查] 以下包安装失败，可能需要手动安装：")
+        for pkg in failed:
+            print(f"    - {pkg}")
+        print(f"  手动安装命令: {python_exe} -m pip install " + " ".join(failed))
+
+    return len(failed) == 0
 
 
 def _pause_on_error():
@@ -276,6 +414,7 @@ def main():
     """主函数：启动控制服务器 + 通过虚拟环境运行 app.py（支持重启循环）
 
     如果虚拟环境不存在，询问是否自动创建。
+    如果虚拟环境已存在，检测依赖是否完整，缺失的自动安装。
     """
     global _app_process, _restart_flag
 
@@ -289,6 +428,11 @@ def main():
         python_exe = create_virtualenv()
         if not python_exe:
             return 1
+    else:
+        # 虚拟环境已存在，检测依赖是否完整
+        print("[依赖检查] 正在检测虚拟环境中的依赖安装情况...")
+        check_and_install_dependencies(python_exe)
+        print()
 
     app_py = os.path.join(script_dir, 'app.py')
     if not os.path.exists(app_py):
