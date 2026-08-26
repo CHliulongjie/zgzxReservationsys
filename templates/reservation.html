@@ -25,21 +25,23 @@
 
         /* 修改导航栏样式 */
         .navbar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: rgba(15, 22, 64, 0.85);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
             position: relative;
-            z-index: 1050; /* 确保导航栏高于其他内容 */
+            z-index: 1050;
         }
 
-        /* 修改导航栏文字颜色为深色 */
+        /* 修改导航栏文字颜色为浅色（适配科技主题） */
         .navbar-brand,
         .navbar-nav .nav-link {
-            color: #333 !important;
+            color: #e2e8f0 !important;
         }
 
-        .navbar-nav .nav-link:hover {
-            color: var(--primary) !important;
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link.active {
+            color: #00d4ff !important;
         }
 
         /* 修改下拉菜单样式，确保显示在最上层 */
@@ -51,20 +53,20 @@
 
         /* 其他原有样式保持不变 */
         .system-tabs {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(15, 22, 64, 0.65);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .system-tab {
             padding: 15px 25px;
             border: none;
             background: none;
-            color: #495057;
+            color: #94a3b8;
             font-weight: 500;
             border-bottom: 3px solid transparent;
             transition: all 0.3s ease;
@@ -88,10 +90,10 @@
 
         .system-card {
             border-radius: 15px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-            border: none;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.2);
             margin-bottom: 30px;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(15, 22, 64, 0.65);
             backdrop-filter: blur(10px);
             overflow: hidden;
         }
@@ -99,16 +101,16 @@
         .system-header {
             border-radius: 15px 15px 0 0;
             padding: 25px;
-            color: #333;
+            color: #f8fafc;
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         }
 
         .field-card {
-            border: 2px solid #e0e0e0;
+            border: 2px solid rgba(0, 212, 255, 0.2);
             border-radius: 12px;
             padding: 25px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: white;
+            background: rgba(15, 22, 64, 0.5);
             position: relative;
             overflow: hidden;
         }
@@ -148,35 +150,41 @@
 
         .session-card {
             border-left: 4px solid var(--info);
-            background: white;
+            background: rgba(15, 22, 64, 0.5);
+            border: 1px solid rgba(0, 212, 255, 0.2);
             border-radius: 12px;
             padding: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
+            color: #e2e8f0;
         }
 
         .session-card:hover {
             transform: translateX(5px);
-            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.4);
         }
 
         .user-info {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(15, 22, 64, 0.65);
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            color: #e2e8f0;
         }
 
         .date-selector {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(15, 22, 64, 0.65);
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 212, 255, 0.2);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            color: #e2e8f0;
         }
 
         .alert-container {
