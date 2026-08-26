@@ -267,10 +267,41 @@ def control_panel():
 
 # ==================== 登录相关API ====================
 
+def get_users_xlsx_path():
+    """获取有效的 users.xlsx 路径
+
+    优先使用配置中的 xlsx_path，若该路径不存在（例如配置了 Linux 路径但在
+    Windows 上运行），则回退到项目根目录(base_dir)下的 users.xlsx。
+    """
+    login_config = config_manager.get_login_config()
+    configured = login_config.get('xlsx_path', 'users.xlsx')
+
+    # 如果是绝对路径且存在，直接使用
+    if os.path.isabs(configured) and os.path.exists(configured):
+        return configured
+
+    # 相对路径：相对于项目根目录解析
+    candidate = os.path.join(config_manager.base_dir, configured)
+    if os.path.exists(candidate):
+        return candidate
+
+    # 回退到项目根目录下的 users.xlsx
+    return os.path.join(config_manager.base_dir, 'users.xlsx')
+
+
+def get_server_login_url():
+    """获取服务器登录URL（xyz服务器的登录路由为 /login，而非 /login1）"""
+    login_config = config_manager.get_login_config()
+    url = login_config.get('server_url', 'https://longjieruankong.xyz/login')
+    # 修正历史遗留的 /login1 路径为 /login
+    if url.endswith('/login1'):
+        url = url[:-1]  # 去掉末尾的 1，变成 /login
+    return url
+
+
 def ensure_users_xlsx():
     """确保users.xlsx文件存在，如果不存在则创建并添加测试账号"""
-    login_config = config_manager.get_login_config()
-    xlsx_path = login_config.get('xlsx_path', os.path.join(config_manager.base_dir, 'users.xlsx'))
+    xlsx_path = get_users_xlsx_path()
 
     if not os.path.exists(xlsx_path):
         try:
@@ -301,14 +332,13 @@ def api_login_xlsx():
         # 确保XLSX文件存在
         ensure_users_xlsx()
 
-        # 检查XLSX文件
-        login_config = config_manager.get_login_config()
-        xlsx_path = login_config.get('xlsx_path', os.path.join(config_manager.base_dir, 'users.xlsx'))
+        # 检查XLSX文件（使用健壮的路径获取函数，避免配置路径不存在导致登录失败）
+        xlsx_path = get_users_xlsx_path()
 
         if os.path.exists(xlsx_path):
             try:
                 df = pd.read_excel(xlsx_path)
-                # 假设第一列是用户名，第二列是密码
+                # 第一列是用户名，第二列是密码
                 for _, row in df.iterrows():
                     if str(row[0]).strip() == username and str(row[1]).strip() == password:
                         session['user'] = username
@@ -336,15 +366,14 @@ def api_login_server():
         if not username or not password:
             return jsonify({'error': '用户名和密码不能为空'}), 400
 
-        # 调用外部服务器
-        login_config = config_manager.get_login_config()
-        server_url = login_config.get('server_url', 'https://longjieruankong.xyz/login1')
+        # 调用外部服务器（xyz服务器登录路由为 /login）
+        server_url = get_server_login_url()
 
         try:
             response = requests.post(
                 server_url,
                 json={'username': username, 'password': password},
-timeout=10
+                timeout=10
             )
 
             if response.status_code == 200:
@@ -376,21 +405,8 @@ def api_login_control():
             return jsonify({'error': '用户名和密码不能为空'}), 400
 
         # 控制面板只能通过服务器登录验证
-        # 使用 /login 接口（而不是 /login1），因为只有 /login 返回 roles 和 permissions
-        login_config = config_manager.get_login_config()
-        server_base_url = login_config.get('server_url', 'https://longjieruankong.xyz/login1')
-
-# 将 /login1 替换为 /login，如果URL以 /login1 结尾
-        if server_base_url.endswith('/login1'):
-            admin_login_url = server_base_url.replace('/login1', '/login')
-        else:
-            # 如果URL不以 /login1 结尾，尝试构造 /login URL
-            # 移除路径部分，只保留基础URL
-            if '://' in server_base_url:
-                parts = server_base_url.split('/')
-                admin_login_url = '/'.join(parts[:3]) + '/login'
-            else:
-                admin_login_url = server_base_url.rstrip('/') + '/login'
+        # 使用 get_server_login_url() 获取正确的 /login 路由（xyz服务器登录路由为 /login）
+        admin_login_url = get_server_login_url()
 
         app.logger.info(f"管理员登录尝试连接到: {admin_login_url}")
 
