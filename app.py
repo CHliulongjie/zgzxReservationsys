@@ -901,6 +901,56 @@ def api_book_session(system_name):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/reservation/session/<system_name>/cancel', methods=['POST'])
+@login_required
+def api_cancel_session(system_name):
+    """取消电影/其他预约"""
+    try:
+        data = request.json
+        username = session.get('user')
+        session_id = data.get('session_id')
+
+        if not username:
+            return jsonify({'error': '请先登录'}), 401
+
+        if not session_id:
+            return jsonify({'error': '缺少必要参数'}), 400
+
+        # 仅允许 movie/other 系统
+        if system_name not in ['movie', 'other']:
+            return jsonify({'error': '系统类型错误'}), 400
+
+        # 加载预约数据
+        df, loaded_session_name = load_session_data(system_name, session_id)
+
+        if df.empty:
+            return jsonify({'error': '预约记录不存在'}), 404
+
+        # 获取已预约的用户列表（列名是预约人）
+        usernames = [str(col) for col in df.columns.tolist()
+                     if col and pd.notna(col) and str(col).strip() and str(col) != '项目']
+
+        # 检查是否已预约
+        if username not in usernames:
+            return jsonify({'error': '您未预约该项目'}), 400
+
+        # 移除当前用户
+        usernames.remove(username)
+
+        # 保存（使用已加载的项目名称，如无则回退到 session_id）
+        session_name = loaded_session_name if loaded_session_name else f'项目{session_id}'
+
+        if save_session_data(system_name, session_id, session_name, usernames):
+            app.logger.info(f"用户{username}取消了{system_name}项目{session_name}的预约")
+            return jsonify({'success': True})
+        else:
+            return jsonify({'error': '保存失败'}), 500
+
+    except Exception as e:
+        app.logger.error(f"取消预约失败: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 # ==================== 场次管理API ====================
 
 @app.route('/api/session/<system_name>/add', methods=['POST'])
@@ -1177,12 +1227,13 @@ def api_get_user_reservations():
                 for file in os.listdir(sys_dir):
                     if file.endswith('.xlsx'):
                         session_id = file[:-5]
-                        df, _ = load_session_data(system, session_id)
+                        df, session_name = load_session_data(system, session_id)
                         if not df.empty and username in df.columns:
                             result.append({
                                 'system': system,
                                 'system_name': config_manager.get_system_config(system).get('name', system),
                                 'session_id': session_id,
+                                'session_name': session_name or f'项目{session_id}',
                                 'type': 'session'
                             })
 

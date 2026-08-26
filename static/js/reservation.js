@@ -369,7 +369,7 @@ async function confirmBooking() {
     }
 }
 
-// 取消预约
+// 取消预约（球类）
 async function cancelReservation(date, field) {
     if (!confirm(`确定要取消 ${field} 的预约吗？`)) {
         return;
@@ -392,6 +392,42 @@ async function cancelReservation(date, field) {
         if (data.success) {
             showAlert('取消预约成功', 'success');
             loadSystemContent();
+            checkTodayReservation();
+        } else {
+            showAlert(data.error || '取消失败', 'danger');
+        }
+    } catch (error) {
+        showAlert('网络错误: ' + error.message, 'danger');
+    }
+}
+
+// 取消预约（电影/其他）
+async function cancelSessionReservation(system, sessionId, sessionName) {
+    if (!confirm(`确定要取消「${sessionName}」的预约吗？`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/reservation/session/${system}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                session_id: sessionId
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showAlert('取消预约成功', 'success');
+            // 刷新"我的预约"列表
+            showMyReservations();
+            // 如果当前正在查看该系统，也刷新内容
+            if (currentSystem === system) {
+                loadSystemContent();
+            }
             checkTodayReservation();
         } else {
             showAlert(data.error || '取消失败', 'danger');
@@ -549,19 +585,47 @@ async function showMyReservations() {
                 let html = '<div class="list-group">';
 
                 data.reservations.forEach(res => {
+                    // 球类预约：显示场地和日期
+                    // 电影/其他预约：在系统名后加括号显示项目名
+                    let titleHtml = `<h6 class="mb-1">${res.system_name}</h6>`;
+                    let infoHtml = '';
+                    let cancelBtnHtml = '';
+
+                    if (res.type === 'session') {
+                        // 电影/其他预约
+                        if (res.session_name) {
+                            titleHtml = `<h6 class="mb-1">${res.system_name}（${res.session_name}）</h6>`;
+                        }
+                        cancelBtnHtml = `
+                            <button class="btn btn-sm btn-danger" onclick="cancelSessionReservation('${res.system}', '${res.session_id}', '${(res.session_name || '').replace(/'/g, "\\'")}')">
+                                取消
+                            </button>
+                        `;
+                    } else {
+                        // 球类预约
+                        if (res.field) {
+                            infoHtml += `<p class="mb-1 text-muted">场地: ${res.field}</p>`;
+                        }
+                        if (res.date) {
+                            infoHtml += `<p class="mb-0 text-muted">日期: ${res.date}</p>`;
+                        }
+                        if (res.field) {
+                            cancelBtnHtml = `
+                                <button class="btn btn-sm btn-danger" onclick="cancelReservation('${res.date}', '${res.field}')">
+                                    取消
+                                </button>
+                            `;
+                        }
+                    }
+
                     html += `
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="mb-1">${res.system_name}</h6>
-                                    ${res.field ? `<p class="mb-1 text-muted">场地: ${res.field}</p>` : ''}
-                                    ${res.date ? `<p class="mb-0 text-muted">日期: ${res.date}</p>` : ''}
+                                    ${titleHtml}
+                                    ${infoHtml}
                                 </div>
-                                ${res.field ? `
-                                    <button class="btn btn-sm btn-danger" onclick="cancelReservation('${res.date}', '${res.field}')">
-                                        取消
-                                    </button>
-                                ` : ''}
+                                ${cancelBtnHtml}
                             </div>
                         </div>
                     `;
