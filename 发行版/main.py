@@ -22,11 +22,8 @@ import hashlib
 import shutil
 import atexit
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-
-try:
-    import requests
-except ImportError:
-    requests = None
+import urllib.request
+import urllib.error
 
 
 # ==================== 配置 ====================
@@ -232,29 +229,35 @@ def compute_all_encrypted_hashes():
 
 # ==================== 服务器通信 ====================
 def verify_with_server(hashes):
-    """向 top 服务器验证哈希值
+    """向 top 服务器验证哈希值（使用标准库 urllib，无需 requests 依赖）
 
     返回:
       - (True, password): 验证通过，返回密码
       - (False, need_update_files): 需要更新，返回需更新的文件列表
       - (None, error_msg): 服务器错误
     """
-    if requests is None:
-        print("[发行版] requests 库未安装，无法连接服务器")
-        return None, "requests 库未安装"
-
     try:
         print(f"[发行版] 正在连接 {TOP_SERVER_URL} 验证文件...")
-        response = requests.post(
-            f"{TOP_SERVER_URL}/api/release/verify",
-            json={'files': hashes},
-            timeout=30
+        url = f"{TOP_SERVER_URL}/api/release/verify"
+        payload = json.dumps({'files': hashes}).encode('utf-8')
+        req = urllib.request.Request(
+            url,
+            data=payload,
+            headers={'Content-Type': 'application/json; charset=utf-8'},
+            method='POST'
         )
 
-        if response.status_code != 200:
-            return None, f"服务器返回错误: {response.status_code}"
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                body = resp.read().decode('utf-8')
+        except urllib.error.HTTPError as e:
+            return None, f"服务器返回错误: {e.code}"
+        except urllib.error.URLError as e:
+            if 'timed out' in str(e).lower():
+                return None, "连接服务器超时"
+            return None, "无法连接到服务器，请检查网络连接"
 
-        result = response.json()
+        result = json.loads(body)
         status = result.get('status')
 
         if status == 'ok':
@@ -272,35 +275,32 @@ def verify_with_server(hashes):
             msg = result.get('message', '未知错误')
             return None, msg
 
-    except requests.exceptions.ConnectionError:
-        return None, "无法连接到服务器，请检查网络连接"
-    except requests.exceptions.Timeout:
-        return None, "连接服务器超时"
     except Exception as e:
         return None, str(e)
 
 
 def download_encrypted_file(filename):
-    """从 top 服务器下载加密文件"""
-    if requests is None:
-        return False
-
+    """从 top 服务器下载加密文件（使用标准库 urllib，无需 requests 依赖）"""
     try:
         print(f"[发行版] 正在下载 {filename}...")
-        response = requests.get(
-            f"{TOP_SERVER_URL}/api/release/download/{filename}",
-            timeout=120
-        )
+        url = f"{TOP_SERVER_URL}/api/release/download/{filename}"
+        req = urllib.request.Request(url, method='GET')
 
-        if response.status_code != 200:
-            print(f"[发行版] 下载失败: {response.status_code}")
+        try:
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                content = resp.read()
+        except urllib.error.HTTPError as e:
+            print(f"[发行版] 下载失败: {e.code}")
+            return False
+        except urllib.error.URLError as e:
+            print(f"[发行版] 下载 {filename} 失败: {e}")
             return False
 
         encrypted_dir = os.path.join(os.getcwd(), ENCRYPTED_DIR)
         file_path = os.path.join(encrypted_dir, filename)
 
         with open(file_path, 'wb') as f:
-            f.write(response.content)
+            f.write(content)
 
         print(f"[发行版] {filename} 下载完成")
         return True
